@@ -1,0 +1,32 @@
+\section{Discussion}
+\label{sec:discussion}
+
+\paragraph{Modality complementarity.}
+The asymmetry between AUC and downstream Sharpe across modalities is a key finding.
+The price Transformer achieves competitive predictive AUC but near-zero downstream Sharpe on the synthetic corpus, suggesting that price patterns are highly contested at 15-minute resolution.
+Web intelligence, by contrast, contributes an additional directional cue not captured by price patterns alone, consistent with the hypothesis that exogenous event information can matter at intraday timescales.
+The new \textsc{PriceWeb} comparison in Table~\ref{tab:main} sharpens this point: structured web scalars alone recover only a partial gain over price-only, while remaining materially below \CGCMA{} in mean Sharpe.
+The real-news main comparison (Section~\ref{sec:main}) is consistent with this complementarity under more diverse sentiment conditions, but it should still be read as evidence from a short stress-test horizon rather than as proof of cross-regime stability.
+
+\paragraph{Asynchronous alignment and the absorption window.}
+Our bar-aligned lag analysis reveals a non-monotonic pattern: web intelligence utility peaks in the 30--60 min post-publication window (signal Sharpe $+0.57$), weakens but remains positive at 60--90 min ($+0.28$), and becomes strongly negative beyond 90 min ($-1.33$).
+Very fresh news ($<$30 min) shows near-zero utility ($-0.30$), which is consistent with the possibility that the immediate market response is already underway before the next prediction bar.
+We treat this \emph{absorption-window} pattern as an empirical regularity that motivates staleness-aware fusion, not as a definitive causal account of market microstructure.
+
+\paragraph{Conditional gating vs.\ exponential staleness decay.}
+\SACMA{} uses an exponential schedule with a single global decay constant $\lambda$, which applies identically to all assets, all sources, and all quality levels.
+\CGCMA{} replaces this with a learned per-dimension gate conditioned on price--text agreement, web signal quality, and modality lag.
+Table~\ref{tab:design} sharpens the comparison against simpler lag-aware controls.
+Fixed decay, hard stale filtering, and the dual-branch predecessor all improve on the price-only baseline, which is consistent with lag being a useful conditioning signal.
+At the same time, none of these simpler controls recovers the full mean gain of \CGCMA{}, and the learned scalar decay control remains near parity.
+The mechanism is straightforward: when text is low-quality or stale in a given fold, the gate network can suppress the cross-modal context and fall back toward the price CLS prediction, whereas simpler controls apply the same decay or filtering rule without access to the full grounded context.
+The dedicated component sweep in Section~\ref{sec:design} further supports this interpretation: removing lag, cross-attention, or vector-valued gating each lowers mean Sharpe, even though the no-gate residual variant is not strictly monotonic and therefore leaves one residual design question open.
+Table~\ref{tab:main} still shows that this learned per-dimension gating approach yields the highest mean downstream Sharpe across the evaluated models.
+At the same time, the run-level and matched-fold intervals reported in Section~\ref{sec:results} remain wide, so the most defensible claim at the current sample size is one of favorable ranking and effect direction rather than definitive separation from every baseline.
+
+\paragraph{Deep vs.\ linear models and the role of text diversity.}
+A key finding from the synthetic corpus is that deep cross-modal attention models require not just sufficient sample scale, but also sufficient text signal diversity.
+At ${\sim}500$ training samples per fold with 99\% bullish synthetic text, \SACMA{}-LG degrades from $+0.158$ to $+0.021$---a reversal of the multimodal advantage despite adequate scale.
+The real-news corpus restores positive multimodal Sharpe across several fusion models, providing empirical support for the text diversity hypothesis; only \textsc{TFN} remains negative, consistent with its over-parameterization risk at this evaluation scale.
+This finding has a practical implication: multimodal systems should validate that their text training signal is directionally balanced; periods of near-monotone sentiment can hurt fusion performance.
+The current paper should therefore be read as a controlled study of asynchronous multimodal fusion against representative generic architectures and a small set of task-specific lag-aware controls under a shared protocol, not as an exhaustive benchmark over all possible alternatives.

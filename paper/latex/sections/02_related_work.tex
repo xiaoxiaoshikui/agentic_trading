@@ -1,0 +1,50 @@
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{Financial forecasting from price and text.}
+Sequence models over OHLCV data, including Transformer-based encoders~\cite{vaswani2017attention,zhou2021informer,wu2021autoformer}, temporal fusion models~\cite{lim2021tft}, and newer long-horizon backbones such as PatchTST, TimesNet, and iTransformer~\cite{nie2023patchtst,wu2023timesnet,liu2024itransformer}, remain strong baselines for short-horizon financial prediction, but they are structurally limited to endogenous market dynamics.
+Text-augmented models extend this setting by incorporating exogenous signals from news, social media, or earnings calls.
+StockNet~\cite{xu2018stocknet} jointly models price histories and Twitter text, while event-driven approaches such as Ding et al.~\cite{ding2015deepevent} show that structured news events can improve prediction.
+More recent financial language models, including FinBERT~\cite{yang2020finbert}, FinGPT~\cite{lopez2023fingpt}, and BloombergGPT~\cite{wu2023bloomberggpt}, further improve text-side representation quality.
+However, most of this literature assumes that text and price can be synchronously paired, either by aggregating text into fixed periods or by restricting to narrow publication windows.
+That assumption is weak for cryptocurrency markets, where web intelligence arrives continuously and with highly variable latency.
+
+\paragraph{Multimodal fusion and the asynchronous-evaluation gap.}
+While the financial forecasting literature provides strong unimodal and text-augmented baselines, it largely sidesteps the asynchronous challenge that broader multimodal fusion research has only recently begun to surface.
+More broadly, multimodal learning has been organized around representation, translation, alignment, fusion, and co-learning problems~\cite{baltrusaitis2019multimodal}, with gating-based and memory-based fusion families such as GMU, MFN, MISA, and DMNC~\cite{arevalo2017gmu,zadeh2018mfn,hazarika2020misa,le2018dmnc} highlighting the importance of selective cross-modal interaction over time and MulT~\cite{tsai2019multimodal} making the unaligned-sequence setting especially visible for language-centered benchmarks.
+Multimodal financial systems such as MDRM~\cite{qin2019mdrm} and the earnings-based risk framework of Sawhney et al.~\cite{sawhney2020multimodal} demonstrate that joint modeling across modalities can improve downstream performance, but they operate in settings with tightly scheduled events and much easier synchronization.
+General-purpose fusion architectures therefore provide the main methodological reference points for our comparisons: BiLSTM late fusion~\cite{xu2018stocknet}, directional cross-modal attention in MulT~\cite{tsai2019multimodal}, multiplicative interaction modeling in TFN~\cite{zadeh2017tensor}, modality gating in GMU~\cite{arevalo2017gmu}, memory-based sequential fusion in MFN~\cite{zadeh2018mfn}, and the broader fusion taxonomy summarized by Baltru\v{s}aitis et al.~\cite{baltrusaitis2019multimodal}.
+In cryptocurrency prediction, prior multimodal datasets and systems remain mostly daily and do not expose within-day freshness.
+Sentiment from Twitter~\cite{abraham2018cryptocurrency}, Reddit~\cite{kim2019predicting}, fear\,\&\,greed indicators~\cite{chen2021fear}, and on-chain activity~\cite{kondor2014rich} has been studied separately, while integrated benchmarks such as PreBit~\cite{zou2023prebit}, DAM~\cite{li2024dam}, CryptoPulse~\cite{liu2024cryptopulse}, and Barth{\'e}lemy et al.~\cite{barthelemy2025deepnlp} operate at daily granularity.
+As summarized in Table~\ref{tab:benchmark_comparison}, these datasets do not record modality lag $\tau_{\mathrm{lag}}$ per aligned sample, which makes lag-conditioned training and lag-stratified analysis impossible.
+\dataset{} is designed to fill this broader asynchronous-evaluation gap by providing 15-minute price alignment together with explicit lag metadata; cryptocurrency markets serve here as a convenient stress-test environment rather than as the paper's only intended downstream domain.
+
+\begin{table*}[t]
+\caption{Comparison of cryptocurrency multimodal datasets. \emph{Lag $\tau$} indicates whether per-sample modality lag is recorded; \emph{Rolling+SR} indicates rolling walk-forward evaluation with Sharpe reporting. LLM synthesis trades source authenticity for temporal control and sub-hourly coverage; the associated limitations are discussed in Section~\ref{sec:limitations}.}
+\label{tab:benchmark_comparison}
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{llccccc}
+\toprule
+Dataset & Text source & Price granularity & Assets & Samples & Lag $\tau$ recorded & Rolling+SR \\
+\midrule
+PreBit~\cite{zou2023prebit}            & Real (Twitter)          & Daily   & BTC         & ${\sim}$1K         & \texttimes & \texttimes \\
+DAM~\cite{li2024dam}                   & Real (CryptoCompare)    & Daily   & BTC         & ${\sim}$1K         & \texttimes & \texttimes \\
+CryptoPulse~\cite{liu2024cryptopulse}  & Real (Cointelegraph)    & Daily   & Top-5       & ${\sim}$1K         & \texttimes & \texttimes \\
+Barth{\'e}lemy et al.~\cite{barthelemy2025deepnlp} & Real (Twitter/Reddit) & Daily & BTC/ETH  & ${\sim}$3yr        & \texttimes & \checkmark \\
+\midrule
+\dataset{} (synthetic)                & LLM-synthesized         & \textbf{15 min} & BTC/ETH/SOL & \textbf{21{,}374} & \checkmark & \checkmark \\
+\dataset{} (real news)                & Real (CryptoCompare)    & \textbf{15 min} & BTC/ETH/SOL & \textbf{27{,}914} & \checkmark & \checkmark \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\paragraph{Temporal alignment, freshness, and lag-aware trust.}
+Beyond finance, related ideas appear in temporal knowledge graph embedding, temporally weighted recommendation, and sequence models that explicitly acknowledge unaligned context windows.
+HyTE~\cite{dasgupta2018hyte} conditions representations on validity intervals, temporally weighted co-attention methods in recommendation down-weight stale context~\cite{liu2021temporal}, and MulT-style cross-modal attention shows that alignment need not be hard-coded at equal timestamps~\cite{tsai2019multimodal}.
+However, these lines of work stop short of a learned, content-aware trust mechanism that jointly conditions on cross-modal agreement and lag.
+What is missing in multimodal financial forecasting is therefore not just a better text encoder, but an explicit mechanism for deciding \emph{when} text should be trusted relative to the current market state.
+Existing financial fusion models typically ignore modality lag or treat it as a nuisance variable rather than as an architectural input.
+\CGCMA{} takes the opposite view: text first grounds into the price history through cross-modal attention, and lag-aware trust is then handled explicitly by a conditional gate that receives $\tau_{\mathrm{lag}}$ together with the modality representations.

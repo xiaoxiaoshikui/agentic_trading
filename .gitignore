@@ -1,0 +1,99 @@
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+
+# Python environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# OS and editor files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Runtime output
+logs/
+tmp/
+experiment_log.txt
+*.log
+*.out
+*.err
+*.bak
+*.tmp
+texput.log
+
+# Trading data and generated datasets
+data/**
+!data/
+!data/README.md
+!data/samples/
+!data/samples/**
+
+# Experiment caches and generated result directories
+experiments/data_cache/
+experiments/mm_cache/
+experiments/results/
+experiments/results*/
+evolution_experiments/
+
+# Large generated artifacts and model files
+*.parquet
+*.pkl
+*.pickle
+*.joblib
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.h5
+*.npy
+*.npz
+
+# Archives and build artifacts
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+dist/
+build/
+*.egg-info/
+
+# LaTeX generated files
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.lot
+*.out
+*.synctex.gz
+*.toc
+
+# Private manuscript/review workflow artifacts
+paper/*draft*
+paper/*submission*
+paper/*rebuttal*
+paper/*review*
+paper/*runbook*
+paper/*checklist*
+paper/**/*.pdf

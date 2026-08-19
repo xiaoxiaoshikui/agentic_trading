@@ -1,0 +1,125 @@
+{
+  "name": "tom_minimal",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT"
+  ],
+  "interval": "15m",
+  "n_bars": 3000,
+  "n_periods": 3,
+  "train_ratio": 0.7,
+  "min_train_bars": 400,
+  "min_test_bars": 150,
+  "seeds": [
+    42,
+    123
+  ],
+  "output_dir": "experiments/results_tom",
+  "eval": {
+    "initial_capital": 10000.0,
+    "max_positions": 3,
+    "capital_per_position": 0.3,
+    "max_long_exposure": 0.6,
+    "max_short_exposure": 0.6,
+    "max_daily_loss": 0.05,
+    "max_single_asset_loss": 0.08,
+    "min_confidence": 0.3,
+    "atr_stop_multiplier": 2.0,
+    "atr_profit_multiplier": 4.0,
+    "warmup_bars": 100
+  },
+  "agents": {
+    "Technical": {
+      "type": "technical"
+    },
+    "LLM": {
+      "type": "llm",
+      "enabled": true,
+      "model": "deepseek-chat",
+      "temperature": 0.2,
+      "max_tokens": 200,
+      "decision_interval": 4
+    },
+    "ToM-Full": {
+      "type": "tom",
+      "depth": 1,
+      "use_technical": true,
+      "opponents": [
+        "retail",
+        "momentum"
+      ]
+    },
+    "ToM-NoRetail": {
+      "type": "tom",
+      "depth": 1,
+      "use_technical": true,
+      "opponents": [
+        "momentum"
+      ]
+    },
+    "ToM-RulesOnly": {
+      "type": "tom",
+      "depth": 1,
+      "use_technical": false,
+      "opponents": [
+        "retail",
+        "momentum"
+      ]
+    },
+    "ToM-Depth1": {
+      "type": "tom",
+      "depth": 1,
+      "use_technical": true,
+      "opponents": [
+        "retail",
+        "momentum"
+      ]
+    },
+    "ToM-Depth2": {
+      "type": "tom",
+      "depth": 2,
+      "use_technical": true,
+      "opponents": [
+        "retail",
+        "momentum"
+      ]
+    },
+    "ToM-Depth3": {
+      "type": "tom",
+      "depth": 3,
+      "use_technical": true,
+      "opponents": [
+        "retail",
+        "momentum"
+      ]
+    }
+  },
+  "experiments": {
+    "E1": {
+      "name": "main_performance",
+      "agents": [
+        "Technical",
+        "LLM",
+        "ToM-Full"
+      ]
+    },
+    "E2": {
+      "name": "ablation",
+      "agents": [
+        "ToM-Full",
+        "ToM-NoRetail",
+        "ToM-RulesOnly"
+      ]
+    },
+    "E3": {
+      "name": "depth",
+      "agents": [
+        "ToM-Depth1",
+        "ToM-Depth2",
+        "ToM-Depth3"
+      ]
+    }
+  },
+  "end_time": "2026-02-07T00:00:00Z"
+}

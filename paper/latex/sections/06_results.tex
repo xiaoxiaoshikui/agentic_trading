@@ -1,0 +1,140 @@
+\section{Results}
+\label{sec:results}
+
+We present the empirical results as a staged evidence chain rather than as a single leaderboard claim.
+The guiding questions are:
+\emph{(Q1)} does modality lag create a meaningful asynchronous fusion problem at all;
+\emph{(Q2)} are simple freshness heuristics sufficient once lag is observed;
+\emph{(Q3)} which parts of the final design receive direct support from controlled sweeps; and
+\emph{(Q4)} what is the strongest cost-aware quantitative conclusion we can defend on the current short real-news corpus.
+Table~\ref{tab:main} addresses the fourth question directly, while the later subsections use lag analysis, task-specific controls, and dedicated ablations to build a supporting mechanism-oriented argument around that main comparison.
+
+\subsection{Main Comparison: Real-News Multi-Asset Evaluation}
+\label{sec:main}
+
+Table~\ref{tab:main} reports the primary ICAIF comparison on the \dataset{} real-news corpus (BTC+ETH+SOL pooled, 27{,}914 samples) under the cost-aware rolling protocol in Section~\ref{sec:exp}.
+All rows use the same news-available support, the same validation-selected threshold grid, and a 5 bps per-trade cost.
+Results are mean$\pm$std over two seed-level fold averages, with five rolling test blocks per seed.
+
+\begin{table*}[t]
+\caption{Cost-aware main comparison on \dataset{} real news (BTC+ETH+SOL pooled; 27{,}914 samples; 5 bps cost; two seeds and five rolling test blocks per seed). Entries are seed-level mean values except Sharpe, shown as mean$\pm$std across seeds.}
+\label{tab:main}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{lccrrrr}
+\toprule
+Model & Inputs & AUC $\uparrow$ & Brier $\downarrow$ & Trade rate & Hit rate & Sharpe $\uparrow$ \\
+\midrule
+\multicolumn{7}{l}{\emph{Price-only and text/web baselines}} \\
+\textsc{PriceTx-S} & P & 0.575 & 0.252 & 0.305 & 0.540 & $-0.340{\pm}0.091$ \\
+\textsc{DLinear-lite} & P & 0.522 & 0.252 & 0.258 & 0.493 & $-0.531{\pm}1.141$ \\
+\textsc{TimesNet-lite} & P & \textbf{0.599} & \textbf{0.251} & 0.397 & 0.455 & $-0.131{\pm}1.487$ \\
+\textsc{PatchTST} & P & 0.535 & 0.260 & 0.304 & 0.489 & $-0.781{\pm}0.203$ \\
+\textsc{iTransformer-lite} & P & 0.492 & 0.308 & 0.621 & 0.427 & $-1.406{\pm}0.320$ \\
+\textsc{TextWeb-MLP} & T+W & 0.511 & 0.259 & 0.179 & 0.495 & $-0.284{\pm}0.728$ \\
+\textsc{PriceWeb} & P+W & 0.561 & 0.256 & 0.247 & 0.432 & $-0.187{\pm}0.076$ \\
+\addlinespace[2pt]
+\midrule
+\multicolumn{7}{l}{\emph{Multimodal baselines}} \\
+\textsc{BiLSTM} & P+T+W & 0.568 & 0.252 & 0.301 & 0.436 & $-1.021{\pm}0.346$ \\
+\textsc{EarlyFusion} & P+T+W & 0.555 & 0.261 & 0.277 & 0.454 & $-0.114{\pm}0.289$ \\
+\textsc{MulT} & P+T+W & 0.548 & 0.269 & 0.290 & 0.400 & $-0.448{\pm}1.056$ \\
+\textsc{TFN} & P+T+W & 0.539 & 0.266 & 0.337 & 0.461 & $-0.842{\pm}0.609$ \\
+\addlinespace[2pt]
+\midrule
+\multicolumn{7}{l}{\emph{Proposed}} \\
+\CGCMA{} & P+T+W & 0.564 & 0.255 & 0.184 & \textbf{0.542} & \textbf{$+1.047{\pm}0.793$} \\
+\bottomrule
+\end{tabular}
+\vspace{2pt}
+\parbox{0.92\textwidth}{\footnotesize \emph{Note.} P = price, T = text embeddings, W = web scalars. Lower trade rate is not intrinsically better, but under transaction costs it indicates that a model executes fewer low-confidence trades. TimesNet-lite has the best AUC, while \CGCMA{} has the best cost-aware downstream Sharpe.}
+\end{table*}
+
+Table~\ref{tab:main} is the paper's primary quantitative evidence and should be read as a controlled study of event-conditioned asynchronous fusion on news-available bars, not as a live-trading claim.
+The strongest raw classifier is \textsc{TimesNet-lite} (AUC 0.599), showing that \CGCMA{} does not simply dominate all predictive metrics.
+Its advantage appears in the cost-aware downstream layer: \CGCMA{} trades less frequently (0.184 trade rate) and obtains the highest mean net Sharpe ($+1.047\pm0.793$), while the price-only Transformer and all generic multimodal baselines have negative mean Sharpe after costs.
+This pattern is consistent with the intended role of the conditional gate: inject external context selectively rather than convert every weak multimodal signal into a trade.
+
+\begin{table}[tbp]
+\caption{Matched seed-fold Sharpe deltas for selected comparisons. Positive values favor \CGCMA{}. Intervals are bootstrap intervals over 10 matched seed-fold units.}
+\label{tab:matched}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lccc}
+\toprule
+Baseline & Mean $\Delta$ & 95\% CI & Wins/Losses \\
+\midrule
+\textsc{PriceTx-S} & $+1.387$ & $[0.725,\,2.107]$ & 10/0 \\
+\textsc{DLinear-lite} & $+1.577$ & $[0.240,\,2.979]$ & 9/1 \\
+\textsc{PatchTST} & $+1.827$ & $[0.070,\,3.280]$ & 9/1 \\
+\textsc{iTransformer-lite} & $+2.452$ & $[1.199,\,3.804]$ & 9/1 \\
+\textsc{TimesNet-lite} & $+1.177$ & $[-0.352,\,2.581]$ & 8/2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:matched} clarifies which comparisons are stable at the current sample scale.
+\CGCMA{} beats the price-only Transformer in all 10 matched seed-fold units, with a positive bootstrap interval.
+It also has positive intervals against \textsc{DLinear-lite}, \textsc{PatchTST}, and \textsc{iTransformer-lite}.
+The comparison with \textsc{TimesNet-lite} is more conservative: the mean delta is positive and 8 of 10 matched units favor \CGCMA{}, but the interval crosses zero.
+We therefore do not claim statistically decisive superiority over the strongest time-series baseline; rather, \CGCMA{} shows a favorable cost-aware trading profile while TimesNet-lite remains a strong predictive competitor.
+
+\begin{table}[tbp]
+\caption{Fee sensitivity from exported test predictions. Thresholds are selected under the 5 bps validation objective; the table recomputes pooled test-prediction Sharpe under alternative costs, so values are not fold-averaged as in Table~\ref{tab:main}.}
+\label{tab:fees}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lrrrr}
+\toprule
+Model & 0 bps & 5 bps & 10 bps & 20 bps \\
+\midrule
+\textsc{PriceTx-S} & $+1.290$ & $-0.824$ & $-2.925$ & $-6.943$ \\
+\textsc{TimesNet-lite} & $+2.956$ & $+0.817$ & $-1.329$ & $-5.545$ \\
+\CGCMA{} & \textbf{$+3.821$} & \textbf{$+2.505$} & \textbf{$+1.143$} & $-1.631$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The fee-sensitivity analysis in Table~\ref{tab:fees} further explains why cost-aware evaluation changes the ranking.
+Both price-only baselines can look attractive before costs, but their higher trade rates make them degrade quickly once costs are applied.
+\CGCMA{} remains positive through 10 bps in this post-hoc sensitivity analysis, although it also becomes negative at 20 bps.
+The result should therefore be interpreted as evidence for improved cost-aware selectivity, not as evidence of friction-invariant profitability.
+
+\subsection{Development Controls: Lag-Aware Design Variants}
+\label{sec:design}
+
+Earlier development sweeps, run separately from the cost-aware ICAIF main comparison, provide a mechanism check for lag-aware design choices.
+Within those sweeps, simple freshness-aware controls such as fixed decay and hard stale filtering improve over a price-only Transformer, but do not recover the full grounded conditional fusion behavior of \CGCMA{}.
+Component ablations show the same qualitative pattern: removing lag, replacing the vector gate with a scalar gate, and removing cross-attention each reduces mean Sharpe in the development batch.
+We treat these results as design pressure rather than as headline evidence, because the current main comparison in Table~\ref{tab:main} is the only batch evaluated with the 5 bps cost-aware protocol and strong time-series baselines.
+
+\subsection{Modality Lag Analysis}
+\label{sec:lag}
+
+To quantify how web-intelligence utility decays with modality age, we construct a \emph{bar-aligned} BTC dataset in which every 15-minute bar is paired with the nearest preceding web snapshot within a 180-minute window (rather than only bars that coincide with a snapshot).
+This yields 7{,}295 BTC samples with modality lag uniformly distributed from 0 to 105 minutes (mean 52.3 min, std 34.5 min), enabling direct lag-stratified analysis.
+
+For each sample we compute a directional web-intelligence signal $s = \mathrm{sign}(\texttt{news\_direction\_score})$ and evaluate the annualised Sharpe of a rule that takes a long or short position according to $s$, stratified by $\tau_{\mathrm{lag}}$.
+Figure~\ref{fig:lag} shows the result across four 30-minute bins.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\linewidth]{figures/lag_sharpe.pdf}
+  \Description{Bar chart showing annualised signal Sharpe by modality lag bin for bar-aligned BTC data. The 0-to-30-minute bin is slightly negative (-0.30). The 30-to-60-minute bin is the highest (+0.57). The 60-to-90-minute bin is lower but still positive (+0.28). The 90-to-120-minute bin is strongly negative (-1.33). Each bin contains approximately 440 samples.}
+  \caption{Web-intelligence directional signal Sharpe by modality lag ($\tau_{\mathrm{lag}}$) on the bar-aligned BTC dataset (7{,}295 samples, ${\approx}440$ per bin). The 30--60 min post-publication window provides the strongest positive signal. Very fresh news ($<$30 min) is near-zero, while very stale news ($>$90 min) is strongly negative, indicating a non-monotonic empirical freshness pattern.}
+  \label{fig:lag}
+\end{figure}
+
+The pattern is non-monotonic: the 30--60 min window is the most predictive (Sharpe $+0.57$), while the 0--30 min bin is near-zero ($-0.30$) and the 90--120 min bin strongly negative ($-1.33$).
+This is consistent with an empirical \emph{freshness window} in which web intelligence is most useful after a short delay but before it becomes stale.
+We interpret Figure~\ref{fig:lag} as a motivating regularity rather than as a definitive market mechanism.
+That regularity directly motivates the \CGCMA{} gate design: rather than applying a fixed exponential decay (as in \CGCMAfix{}) or a learned scalar decay (as in \CGCMAlg{}), \CGCMA{} conditions the gate on the full modality representation pair, allowing it to learn a non-monotonic freshness boundary from data.
+It also helps explain why simple fixed decay or hard stale filtering recover only part of the gain in development controls: the useful region is not a single monotone freshness band.
+More broadly, the figure shows that asynchronous external context is not merely delayed side information, but a modality whose utility depends on when it is fused.
+In practical terms, this suggests that delayed context should be handled through grounded, lag-aware trust rather than through recency alone.

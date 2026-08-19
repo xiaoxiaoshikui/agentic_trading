@@ -1,0 +1,90 @@
+%%
+%% ICAIF 2026 submission.
+%% Template: ACM acmart sigconf, anonymous review mode.
+%%
+\documentclass[sigconf,review,anonymous,screen]{acmart}
+
+%% Remove ACM copyright block for submission
+\setcopyright{none}
+\acmConference[ICAIF '26]{Proceedings of the ACM International Conference on AI in Finance}{November 2026}{Milan, Italy}
+\acmYear{2026}
+
+%% Packages
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{microtype}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,fit,backgrounds}
+
+%% Shorthand
+\newcommand{\CMA}{\textsc{CrossMA}}
+\newcommand{\CGCMAfix}{\textsc{CGCMA-fix}}   % fixed exponential staleness gate (d=32)
+\newcommand{\CGCMAlg}{\textsc{CGCMA-lg}}     % learned scalar staleness gate + Mixup (d=32)
+\newcommand{\SACMA}{\textsc{CGCMA-fix}}      % legacy alias
+\newcommand{\DualBranch}{\textsc{CGCMA-db}}  % dual-branch conditional late-fusion variant
+\newcommand{\CGCMAdb}{\textsc{CGCMA-db}}     % alias for use in results
+\newcommand{\CGCMA}{\textsc{CGCMA}}          % full proposed: conditional vector gate + residual
+\newcommand{\dataset}{\textsc{CryptoMI}}
+\newcommand{\modage}{$\tau_{\mathrm{lag}}$}
+
+\begin{document}
+
+\title{CGCMA: Cost-Aware Asynchronous Multimodal Fusion for Event-Conditioned Crypto Market Prediction}
+
+\author{Anonymous Authors}
+\affiliation{\institution{Anonymous Institution}}
+\email{anonymous@anonymous.edu}
+
+\begin{abstract}
+We study event-conditioned asynchronous fusion for financial AI: a dense market stream must be combined with sporadic external context whose predictive value depends on when it arrives. Unlike synchronized multimodal benchmarks, this setting requires explicit reasoning about freshness, contradiction, and trust. We introduce \dataset{} (\textbf{Crypto} \textbf{M}arket \textbf{I}ntelligence), a real-news corpus with 27{,}914 BTC/ETH/SOL samples that pair 15-minute price sequences with lagged web intelligence from December 2025 to March 2026. We propose \CGCMA{} (\textbf{C}onditionally-\textbf{G}ated \textbf{C}ross-\textbf{M}odal \textbf{A}ttention), which separates text-conditioned grounding from lag-aware trust control: text attends over the price sequence to identify event-relevant states, and a conditional gate regulates residual context injection using price--text agreement, web features, and modality lag $\tau_{\mathrm{lag}}$. In a cost-aware rolling evaluation with 5 bps transaction cost, two random seeds, and five non-overlapping test blocks, \CGCMA{} obtains the highest mean downstream Sharpe among twelve evaluated models ($\mathbf{+1.047\pm0.793}$), while price-only and strong time-series baselines degrade after costs. Matched seed-fold comparisons show a robust margin over the price-only Transformer ($\Delta{=}{+}1.387$, 10/10 wins, bootstrap CI $[0.725,2.107]$). The margin over the strongest time-series baseline, TimesNet-lite, is positive but not statistically separated at the current sample scale. These results support \CGCMA{} as a cost-aware asynchronous fusion mechanism for event-conditioned market prediction, while leaving broader cross-regime validation to future work.
+\end{abstract}
+
+\keywords{AI in finance, multimodal learning, asynchronous fusion, cryptocurrency prediction, modality lag, cost-aware evaluation}
+
+%%
+%% CCS concepts (mandatory for ACM papers > 2 pages)
+%%
+\begin{CCSXML}
+<ccs2012>
+   <concept>
+       <concept_id>10010147.10010178.10010179</concept_id>
+       <concept_desc>Computing methodologies~Natural language processing</concept_desc>
+       <concept_significance>500</concept_significance>
+   </concept>
+   <concept>
+       <concept_id>10010147.10010178.10010224.10010240</concept_id>
+       <concept_desc>Computing methodologies~Deep learning</concept_desc>
+       <concept_significance>500</concept_significance>
+   </concept>
+   <concept>
+       <concept_id>10002950.10003624.10003633.10010917</concept_id>
+       <concept_desc>Mathematics of computing~Time series analysis</concept_desc>
+       <concept_significance>300</concept_significance>
+   </concept>
+</ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Computing methodologies~Natural language processing}
+\ccsdesc[500]{Computing methodologies~Deep learning}
+\ccsdesc[300]{Mathematics of computing~Time series analysis}
+
+\maketitle
+
+\input{sections/01_introduction}
+\input{sections/02_related_work}
+\input{sections/03_problem_formulation}
+\input{sections/04_method}
+\input{sections/05_experimental_protocol}
+\input{sections/06_results}
+\input{sections/08_limitations_ethics}
+\input{sections/09_conclusion}
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+\end{document}

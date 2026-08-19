@@ -1,0 +1,203 @@
+\begin{tikzpicture}[
+  x=1cm, y=1cm,
+  font=\small,
+  >=Latex,
+  panelbg/.style={draw=black!20, fill=white, rounded corners=7pt, line width=0.8pt},
+  fusionbg/.style={draw=black!22, fill=black!2, rounded corners=7pt, line width=0.9pt},
+  subgroup/.style={draw=black!45, dashed, rounded corners=5pt, line width=0.8pt},
+  card/.style={draw=black!42, fill=white, rounded corners=4pt, line width=0.8pt,
+    minimum height=1.05cm, align=center, inner sep=6pt},
+  pricebox/.style={card, draw=blue!65!black, fill=blue!4, line width=1.0pt},
+  textbox/.style={card, draw=teal!70!black, fill=teal!4, line width=1.0pt},
+  webbox/.style={card, draw=green!55!black, fill=green!4, line width=1.0pt},
+  attnbox/.style={card, draw=blue!40!teal!65!black, fill=blue!2!teal!2, line width=1.0pt},
+  gatebox/.style={card, draw=orange!78!black, fill=orange!4, line width=1.0pt},
+  predbox/.style={card, draw=black!40, fill=white, line width=0.8pt},
+  opnode/.style={circle, draw=black!55, fill=white, line width=0.8pt,
+    minimum size=0.56cm, inner sep=0pt, font=\normalsize\bfseries},
+  chip/.style={draw=black!40, rounded corners=1.6pt, minimum width=0.22cm,
+    minimum height=0.16cm, inner sep=0pt, line width=0.55pt},
+  hdr/.style={font=\small\bfseries, text=black!72, fill=white, inner sep=1.5pt},
+  grouphdr/.style={font=\scriptsize\bfseries, text=black!68, fill=white, inner sep=1.2pt},
+  sublbl/.style={font=\scriptsize, text=black!57, align=center},
+  dimlbl/.style={font=\scriptsize, text=black!52, align=center},
+  pflow/.style={-Latex, draw=blue!70!black, line width=1.15pt},
+  tflow/.style={-Latex, draw=teal!75!black, line width=1.05pt},
+  wflow/.style={-Latex, draw=green!60!black, line width=1.0pt},
+  auxflow/.style={-Latex, draw=green!60!black, line width=0.95pt, dotted},
+  gflow/.style={-Latex, draw=orange!82!black, line width=0.9pt, dashed},
+  mflow/.style={-Latex, draw=black!60, line width=1.0pt},
+]
+
+% ================================================================
+% OUTER PANELS
+% ================================================================
+\begin{pgfonlayer}{background}
+  \node[panelbg,  fit={( 0.0,  2.7)( 7.1, -6.0)}] {};
+  \node[fusionbg, fit={( 7.5,  2.7)(20.9, -6.0)}] {};
+  \node[panelbg,  fit={(21.3,  2.7)(26.2, -6.0)}] {};
+\end{pgfonlayer}
+
+\node[hdr] at (3.55, 3.0) {(1) Encoders};
+\node[hdr] at (14.2, 3.0) {(2) Conditional Fusion\ \textmd{\normalfont[\textit{proposed}]}} ;
+\node[hdr] at (23.75, 3.0) {(3) Prediction};
+
+% ================================================================
+% INPUTS
+% ================================================================
+\node[card, text width=2.1cm] (pricein) at (1.0, 1.55)
+  {OHLCV\\window\\$[t{-}L{+}1,\,t]$};
+\node[card, text width=2.1cm] (textin) at (1.0, -0.55)
+  {Aligned\\text context\\$t^\ast \leq t$};
+\node[card, text width=2.1cm] (webin) at (1.0, -2.75)
+  {Causal\\web scalars\\available at $t$};
+\node[card, text width=2.1cm] (lagin) at (1.0, -4.95)
+  {Freshness\\/\ lag\\$\tau=t-t^\ast$};
+
+% ================================================================
+% ENCODERS
+% ================================================================
+\node[pricebox, text width=3.9cm, minimum height=1.65cm] (priceenc) at (4.45, 1.55)
+  {\textbf{Price Encoder}\\[3pt]
+   $\mathbf{H}^p \in \mathbb{R}^{L\times d}$\ \ (price tokens)\\[2pt]
+   $\mathbf{h}_p \in \mathbb{R}^{d}$\ \ (CLS summary)};
+\node[textbox, text width=3.9cm, minimum height=1.25cm] (textenc) at (4.45, -0.55)
+  {\textbf{Text Encoder}\\[3pt]$\mathbf{h}_t \in \mathbb{R}^{d}$};
+\node[webbox, text width=3.9cm, minimum height=1.25cm] (webenc) at (4.45, -2.75)
+  {\textbf{Web Scalar Encoder}\\[3pt]$\mathbf{h}_w \in \mathbb{R}^{d}$};
+
+\draw[pflow] (pricein.east) -- (priceenc.west);
+\draw[tflow] (textin.east) -- (textenc.west);
+\draw[wflow] (webin.east) -- (webenc.west);
+
+% decorative output chips
+\foreach \dx/\clr in {0.00/blue!12,0.34/blue!20,0.68/blue!28,1.02/blue!36} {
+  \node[chip, fill=\clr] at ([xshift=-1.1cm+\dx cm,yshift=-0.43cm]priceenc.south east) {};
+}
+\foreach \dx/\clr in {0.00/teal!12,0.34/teal!20,0.68/teal!28,1.02/teal!36} {
+  \node[chip, fill=\clr] at ([xshift=-1.1cm+\dx cm,yshift=-0.32cm]textenc.south east) {};
+}
+\foreach \dx/\clr in {0.00/green!12,0.34/green!20,0.68/green!28,1.02/green!36} {
+  \node[chip, fill=\clr] at ([xshift=-1.1cm+\dx cm,yshift=-0.32cm]webenc.south east) {};
+}
+
+% ================================================================
+% FUSION SUBGROUPS
+% ================================================================
+\node[subgroup, fit={(8.0, 2.05)(19.4, -0.15)}] (groundgrp) {};
+\node[grouphdr] at (9.45, 2.18) {Grounding};
+
+\node[subgroup, fit={(8.35, -0.65)(19.25, -5.1)}] (trustgrp) {};
+\node[grouphdr] at (9.55, -0.18) {Trust-Aware Fusion};
+
+% ================================================================
+% GROUNDING BLOCK
+% ================================================================
+\node[attnbox, text width=5.0cm, minimum height=2.0cm] (attn) at (12.3, 1.15)
+  {\textbf{Text-Conditioned\\Price Attention}\\[3pt]
+   {\scriptsize retrieval: text queries price memory}\\[4pt]
+   $\mathbf{Q}=\mathbf{h}_t,\ \mathbf{K,V}=\mathbf{H}^p$\\[3pt]
+   $\mathbf{h}_c=\mathrm{MHA}(\mathbf{h}_t,\mathbf{H}^p)$};
+\node[sublbl, fill=white, inner sep=1pt] at ([yshift=-0.10cm]attn.south)
+  {event-conditioned market context};
+
+% ================================================================
+% TRUST-AWARE FUSION BLOCK
+% ================================================================
+\node[gatebox, text width=6.9cm, minimum height=2.2cm] (gate) at (12.9, -3.0)
+  {\textbf{Conditional Gate}\\[4pt]
+   {\scriptsize trust control from context shift, web context, freshness}\\[4pt]
+   $\mathbf{\Delta}_{pc}=\mathbf{h}_c-\mathbf{h}_p$\\[4pt]
+   $\mathbf{g}=\sigma\!\bigl(W_g[\mathbf{h}_p,\mathbf{h}_c,\mathbf{\Delta}_{pc},\mathbf{h}_w,\tau]\bigr)$};
+\node[dimlbl] at (12.9, -4.22) {$\mathbf{g}\in(0,1)^d$};
+
+\node[opnode] (mul) at (16.85, 0.88) {$\odot$};
+\node[opnode] (plus) at (17.95, 0.88) {$+$};
+\node[pricebox, text width=3.6cm, minimum height=1.38cm] (fused) at (17.25, -0.55)
+  {\textbf{Fused State}\\[3pt]
+   $\mathbf{h}_f=\mathbf{h}_p+\mathbf{g}\odot\mathbf{h}_c$};
+\node[sublbl, fill=white, inner sep=1pt] at ([yshift=-0.08cm]fused.south)
+  {price-only fallback when $\mathbf{g}\rightarrow \mathbf{0}$};
+
+% small feature chips in gate
+\foreach \dx/\clr in {0.00/orange!15,0.38/orange!22,0.76/orange!29,1.14/orange!36,1.52/orange!43} {
+  \node[chip, fill=\clr] at ([xshift=-1.6cm+\dx cm,yshift=-0.26cm]gate.north east) {};
+}
+
+% ================================================================
+% PREDICTION
+% ================================================================
+\node[predbox, text width=2.55cm, minimum height=1.15cm] (concat) at (23.75, 0.85)
+  {\textbf{Concat}\\[2pt]$[\mathbf{h}_f;\mathbf{h}_w]$};
+\node[sublbl, text=green!45!black, fill=white, inner sep=1pt]
+  at ([yshift=-0.08cm]concat.south) {direct predictive cue};
+
+\node[predbox, text width=2.7cm, minimum height=1.2cm] (task) at (23.75, -0.75)
+  {\textbf{Task Head}\\[2pt]$\hat{p}(y{=}1)$};
+\node[sublbl, fill=white, inner sep=1pt] at ([yshift=-0.08cm]task.south)
+  {task-agnostic fusion, binary head shown};
+
+% ================================================================
+% ROUTING
+% ================================================================
+\coordinate (pfork) at ([xshift=0.85cm]priceenc.east);
+\draw[pflow] (priceenc.east) -- (pfork);
+\fill[blue!70!black] (pfork) circle (1.7pt);
+
+% price memory to attention
+\draw[pflow] (pfork) -- ([yshift=0.18cm]attn.west);
+
+% price skip to plus
+\draw[pflow] (pfork) -- ++(0,0.95) -| (plus.north);
+
+% text query to attention
+\draw[tflow] (textenc.east) -- ++(1.2,0) |- ([yshift=-0.34cm]attn.west);
+
+% attention output to multiplier
+\draw[mflow] (attn.east) -- ++(0.95,0) |- (mul.west);
+
+% gate to multiplier
+\draw[gflow] (gate.east) -- ++(1.15,0) |- (mul.south);
+
+% multiplier to plus, plus to fused state
+\draw[mflow] (mul.east) -- ++(0.40,0) -- (plus.west);
+\draw[mflow] (plus.south) -- (fused.north);
+
+% fused state to prediction
+\draw[mflow] (fused.east) -- ++(1.15,0) |- (concat.west);
+\draw[mflow] (concat.south) -- (task.north);
+
+% gate control inputs
+\draw[gflow] ([xshift=0.45cm]priceenc.south) -- ++(0,-1.35) -- ++(3.15,0) |- ([xshift=-1.75cm]gate.north) -- (gate.north);
+\draw[gflow] ([xshift=0.25cm]attn.south) -- ++(0,-1.05) -| ([xshift=-0.35cm]gate.north);
+\draw[gflow] (webenc.east) -- ++(1.5,0) |- ([yshift=-0.05cm]gate.west);
+\draw[gflow] (lagin.east) -- ++(8.7,0) |- ([xshift=0.95cm]gate.south);
+
+% direct web cue
+\draw[auxflow] (webenc.south) -- ++(0,-1.55) -- ++(18.3,0) |- (concat.south);
+
+% ================================================================
+% LEGEND
+% ================================================================
+\node[subgroup, fit={(5.8, -6.45)(20.4, -7.35)}] (legend) {};
+\node[grouphdr] at ([yshift=0.02cm]legend.north) {Visual Legend};
+
+\draw[pflow] (6.35,-6.92) -- ++(0.55,0);
+\node[dimlbl, anchor=west] at (7.05,-6.92) {price path};
+
+\draw[tflow] (8.95,-6.92) -- ++(0.55,0);
+\node[dimlbl, anchor=west] at (9.65,-6.92) {text path};
+
+\draw[wflow] (11.25,-6.92) -- ++(0.55,0);
+\node[dimlbl, anchor=west] at (11.95,-6.92) {web path};
+
+\draw[gflow] (13.45,-6.92) -- ++(0.72,0);
+\node[dimlbl, anchor=west] at (14.35,-6.92) {gate control};
+
+\draw[auxflow] (16.55,-6.92) -- ++(0.72,0);
+\node[dimlbl, anchor=west] at (17.45,-6.92) {direct predictive cue};
+
+\node[opnode] at (19.45,-6.92) {$+$};
+\node[dimlbl, anchor=west] at (19.83,-6.92) {residual add};
+
+\end{tikzpicture}

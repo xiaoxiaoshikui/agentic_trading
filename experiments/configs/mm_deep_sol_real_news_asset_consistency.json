@@ -1,0 +1,70 @@
+{
+  "name": "mm_deep_sol_real_news_asset_consistency",
+  "output_dir": "experiments/results_mm",
+  "split_mode": "rolling",
+  "rolling": {
+    "min_train_windows": 500,
+    "val_windows": 200,
+    "test_windows": 200,
+    "step_windows": 200
+  },
+  "dataset": {
+    "symbol": "SOLUSDT",
+    "symbols": ["SOLUSDT"],
+    "interval": "15m",
+    "n_bars": 10000,
+    "end_time": "2026-03-19T23:59:00Z",
+    "cache_dir": "experiments/data_cache",
+    "history_glob": [
+      "data/multimodal_history_real/*.jsonl"
+    ],
+    "output_dir": "experiments/results_mm",
+    "lookback_bars": 64,
+    "horizon_bars": 4,
+    "alignment_mode": "event",
+    "require_web_context": true,
+    "min_web_context_strength": 0.1,
+    "min_text_char_len": 80,
+    "min_text_source_count": 1,
+    "max_text_error_count": 5,
+    "max_text_template_ratio": 0.8,
+    "min_text_quality_score": 0.0,
+    "cached_only": false,
+    "force_download": false
+  },
+  "text_encoder": {
+    "model_name": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "cache_dir": "experiments/mm_cache/text_embeddings"
+  },
+  "models": [
+    {
+      "name": "price_only",
+      "kind": "price_sequence_transformer",
+      "d_model": 32,
+      "n_heads": 4,
+      "price_layers": 2,
+      "dropout": 0.3,
+      "lr": 1e-3,
+      "weight_decay": 1e-3,
+      "batch_size": 64,
+      "epochs": 30,
+      "patience": 7,
+      "selection_metric": "auc"
+    },
+    {
+      "name": "cgcma",
+      "kind": "conditionally_gated_cross_modal",
+      "d_model": 32,
+      "n_heads": 4,
+      "price_layers": 2,
+      "hidden_dim": 128,
+      "dropout": 0.3,
+      "lr": 1e-3,
+      "weight_decay": 1e-3,
+      "batch_size": 64,
+      "epochs": 30,
+      "patience": 7,
+      "selection_metric": "auc"
+    }
+  ]
+}

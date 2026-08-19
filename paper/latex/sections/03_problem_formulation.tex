@@ -1,0 +1,26 @@
+\section{Problem Formulation}
+\label{sec:problem}
+
+\subsection{Asynchronous Multimodal Market Prediction}
+
+Let $\mathcal{P}_t = \{p_{t-L+1}, \ldots, p_t\}$ denote a price sequence of $L$ OHLCV bars ending at time $t$, where $p_i \in \mathbb{R}^5$ encodes open, high, low, close, and volume.
+
+Let $\mathcal{W}_{t^*}$ denote a web intelligence snapshot collected at time $t^* \leq t$, aggregating news summaries, fear\,\&\,greed index, on-chain whale signals, and social sentiment into a structured representation.
+The \emph{modality lag} is defined as $\tau_{\mathrm{lag}} = t - t^*$, measured in minutes.
+
+\paragraph{Prediction target.}
+We formulate a binary classification problem over a horizon of $H$ bars:
+\[
+y_t = \mathbf{1}\!\left[\frac{c_{t+H} - c_t}{c_t} > 0\right],
+\]
+where $c_t$ denotes the close price at bar $t$.
+
+\paragraph{Asynchronous alignment constraint.}
+Web intelligence is available only at event times $t^* \in \mathcal{E}$, where $\mathcal{E}$ is an irregular discrete set.
+Given a price bar at time $t$, we select the most recent event $t^* = \max\{e \in \mathcal{E} : e \leq t\}$.
+A sample $(t, t^*)$ is retained only if $\tau_{\mathrm{lag}} = t - t^* \leq \tau_{\max}$ (maximum allowed lag).
+This formulation explicitly captures the practical reality that web intelligence may be stale relative to the current price state.
+
+\paragraph{Objective.}
+Given a dataset $\mathcal{D} = \{(\mathcal{P}_t,\, \mathcal{W}_{t^*},\, \tau_{\mathrm{lag}},\, y_t)\}$, learn a model $f: (\mathcal{P}_t, \mathcal{W}_{t^*}, \tau_{\mathrm{lag}}) \to [0,1]$ that estimates $P(y_t = 1)$ while remaining robust to changes in assets and lag distributions.
+Evaluation uses the rolling walk-forward protocol in Section~\ref{sec:exp}, with AUC and downstream Sharpe as the primary metrics.

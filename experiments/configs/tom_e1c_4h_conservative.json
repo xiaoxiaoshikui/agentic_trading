@@ -1,0 +1,59 @@
+{
+  "name": "tom_e1c_4h_conservative",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT"
+  ],
+  "interval": "4h",
+  "n_bars": 3000,
+  "n_periods": 5,
+  "train_ratio": 0.7,
+  "min_train_bars": 500,
+  "min_test_bars": 250,
+  "seeds": [
+    42,
+    123,
+    456,
+    789,
+    2026
+  ],
+  "output_dir": "experiments/results_tom",
+  "eval": {
+    "initial_capital": 10000.0,
+    "max_positions": 3,
+    "capital_per_position": 0.3,
+    "max_long_exposure": 0.6,
+    "max_short_exposure": 0.6,
+    "max_daily_loss": 0.05,
+    "max_single_asset_loss": 0.08,
+    "min_confidence": 0.4,
+    "atr_stop_multiplier": 2.5,
+    "atr_profit_multiplier": 5.0,
+    "warmup_bars": 200
+  },
+  "agents": {
+    "Technical": {
+      "type": "technical"
+    },
+    "ToM-Full": {
+      "type": "tom",
+      "depth": 1,
+      "use_technical": true,
+      "opponents": [
+        "retail",
+        "momentum"
+      ]
+    }
+  },
+  "experiments": {
+    "E1c": {
+      "name": "main_performance_4h_conservative",
+      "agents": [
+        "Technical",
+        "ToM-Full"
+      ]
+    }
+  },
+  "end_time": "2026-02-07T00:00:00Z"
+}

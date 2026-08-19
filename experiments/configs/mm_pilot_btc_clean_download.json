@@ -1,0 +1,45 @@
+{
+  "name": "mm_pilot_btc_clean_download",
+  "output_dir": "experiments/results_mm",
+  "train_ratio": 0.6,
+  "val_ratio": 0.2,
+  "dataset": {
+    "symbol": "BTCUSDT",
+    "interval": "15m",
+    "n_bars": 3000,
+    "end_time": "2025-12-09T00:00:00Z",
+    "cache_dir": "experiments/data_cache",
+    "history_glob": "data/history/*.jsonl",
+    "output_dir": "experiments/mm_cache",
+    "lookback_bars": 64,
+    "horizon_bars": 4,
+    "max_history_lag_minutes": 180,
+    "require_web_context": true,
+    "cached_only": false,
+    "force_download": true
+  },
+  "models": [
+    {
+      "name": "price_only_linear",
+      "feature_group": "price",
+      "alpha": 1.0
+    },
+    {
+      "name": "web_only_linear",
+      "feature_group": "web",
+      "alpha": 1.0
+    },
+    {
+      "name": "multimodal_linear",
+      "feature_group": "all",
+      "alpha": 1.0
+    },
+    {
+      "name": "gated_residual_multimodal",
+      "feature_group": "all",
+      "kind": "gated_residual",
+      "alpha": 1.0,
+      "web_alpha": 3.0
+    }
+  ]
+}

@@ -1,0 +1,112 @@
+\section{Dataset and Method}
+\label{sec:method}
+
+\subsection{Task Inputs and Alignment}
+Each decision uses a 15-minute OHLCV lookback window with $L=64$ bars, a web-intelligence text blob, and 13 aligned scalar web features.
+At decision time $t$, we pair the price window with the most recent web item $t^* \leq t$ such that $\tau_{\mathrm{lag}} = t - t^* \leq 180$ minutes.
+Figure~\ref{fig:arch} denotes the resulting causally aligned text signal as an \emph{aligned text context}.
+Detailed corpus statistics and evaluation-split properties are deferred to Section~\ref{sec:exp} and Table~\ref{tab:dataset}.
+
+\subsection{\CGCMA{}: Conditionally-Gated Cross-Modal Attention}
+\label{sec:cgcma}
+
+\paragraph{Overview.}
+\CGCMA{} consists of a \emph{price encoder}, a \emph{text encoder}, a \emph{text-conditioned price attention} module, and a \emph{conditional gate}, as illustrated in Figure~\ref{fig:arch}.
+The central design principle is to separate \emph{grounding} from \emph{trust control}: attention first uses event semantics to retrieve relevant market states from the price history, and a learned gate then determines how strongly that text-conditioned signal should update the primary price representation.
+Viewed more abstractly, event-conditioned asynchronous fusion contains two coupled subproblems.
+The \emph{grounding problem} asks which parts of a dense primary stream are relevant to the current external context.
+The \emph{trust problem} asks how much of that context should be injected, given freshness, agreement, and auxiliary quality signals.
+\CGCMA{} maps these two subproblems to two separate modules rather than collapsing them into a single fusion step.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.95\textwidth,keepaspectratio]{figures/cgcma_arch_v2.drawio.png}
+  \Description{Architecture of CGCMA. All inputs are causally aligned at decision time t: the OHLCV window ends at t, the aligned text context satisfies t star less than or equal to t, the web scalars are available at t, and the freshness variable is tau equals t minus t star. A price encoder outputs the full price token sequence H superscript p and a price summary h sub p. A text encoder outputs h sub t, and a web scalar encoder outputs h sub w. Text-conditioned price attention uses the text token as query and the price token sequence as keys and values, followed by layer normalization, to retrieve an event-conditioned market context h sub c. A conditional gate receives h sub p, h sub c, their context-shift term delta sub pc equals h sub p minus h sub c, h sub w, and tau divided by 60, and outputs a per-dimension gate vector g. A gated residual fusion block computes h sub f equals h sub p plus g elementwise-multiplied by h sub c, preserving a price-only fallback path when the gate closes. The fused state is concatenated with a direct predictive web cue and passed to a task head, shown here as binary direction prediction.}
+  \caption{\CGCMA{} architecture. The proposed fusion is explicitly split into two roles: text-conditioned price attention \emph{grounds} the aligned text in the full price sequence to form $\mathbf{h}_c=\mathrm{LN}(\mathrm{MHA}(\mathbf{h}_t,\mathbf{H}^p,\mathbf{H}^p))$, while the conditional gate \emph{controls trust} in that context using the context shift $\mathbf{\Delta}_{pc}=\mathbf{h}_p-\mathbf{h}_c$, web context, and freshness $\tau/60$. This yields a causally aligned multimodal residual update $\mathbf{h}_f=\mathbf{h}_p+\mathbf{g}\odot\mathbf{h}_c$ that falls back to the price-only path when text is stale or uninformative, while retaining $\mathbf{h}_w$ as a direct predictive cue at the task head. The main experiments instantiate the task head as binary direction classification, but the fusion design itself is task-agnostic.}
+  \label{fig:arch}
+\end{figure*}
+
+\paragraph{Price encoder.}
+The price sequence $\mathcal{P}_t \in \mathbb{R}^{L \times d_p}$ is projected to model dimension $d$, augmented with learnable positional embeddings, and encoded by a $N_p$-layer Transformer with a prepended \textsc{[CLS]} token:
+\[
+[\,\mathbf{h}_{p},\, \mathbf{H}^p\,] = \mathrm{TransformerEncoder}([\mathbf{e}_{\mathrm{cls}},\; \mathbf{W}_p \mathcal{P}_t + \mathbf{E}_{\mathrm{pos}}]),
+\]
+where $\mathbf{h}_{p} \in \mathbb{R}^d$ is the global price summary and $\mathbf{H}^p \in \mathbb{R}^{L \times d}$ is the full price token sequence.
+
+\paragraph{Text and web encoder.}
+The web intelligence text blob is encoded with a frozen multilingual sentence transformer~\cite{reimers2019sentencebert} (paraphrase-multilingual-MiniLM-L12-v2, 384 dimensions), producing $\mathbf{e}^{\mathrm{text}} \in \mathbb{R}^{384}$.
+The 13 scalar web features are normalized into $\mathbf{w} \in \mathbb{R}^{13}$.
+The text branch is projected to model width $d$, while the web branch is projected to a separate width $d_w$ (implemented as half of the gate hidden width):
+\[
+\mathbf{h}_{t} = \mathrm{LN}(\mathbf{W}_{\mathrm{text}}\,\mathbf{e}^{\mathrm{text}}),\quad
+\mathbf{h}_{w} = \mathrm{MLP}_{\mathrm{web}}(\mathbf{w}),
+\]
+where $\mathbf{h}_{t} \in \mathbb{R}^{d}$ and $\mathbf{h}_{w} \in \mathbb{R}^{d_w}$.
+
+\paragraph{Text-conditioned price attention.}
+The text token attends over the full price token sequence to extract price-grounded context:
+\begin{equation}
+\tilde{\mathbf{h}}_{t \to p} = \mathrm{MHA}(\mathbf{h}_{t},\; \mathbf{H}^p,\; \mathbf{H}^p),
+\label{eq:text2price}
+\end{equation}
+where $\mathbf{h}_{t}$ serves as the query, and $\mathbf{H}^p$ provides keys and values.
+This stage addresses the \emph{grounding} problem: using the text representation as the query lets current event semantics retrieve the most relevant market states from the historical price trajectory, rather than forcing the full price sequence to absorb the text signal uniformly.
+In the current implementation, the attention output is layer-normalized directly, i.e.,
+\[
+\mathbf{h}_c = \mathrm{LN}(\tilde{\mathbf{h}}_{t \to p}),
+\]
+yielding an event-conditioned market context grounded in the current price dynamics.
+
+\paragraph{Conditional gate.}
+Unlike fixed-schedule staleness gating (e.g., exponential decay), \CGCMA{} uses a \emph{learned} per-dimension gate that simultaneously models cross-modal agreement, web signal quality, and modality lag.
+This stage addresses the \emph{trust} problem by deciding how much of the grounded text-conditioned context should influence the price representation:
+\begin{equation}
+\mathbf{\Delta}_{pc} = \mathbf{h}_{p} - \mathbf{h}_c,\qquad
+\mathbf{g} = \sigma\!\left(W_g\,[\mathbf{h}_{p},\; \mathbf{h}_c,\; \mathbf{\Delta}_{pc},\; \mathbf{h}_{w},\; \tau_{\mathrm{lag}} / 60]\right) \in (0,1)^d,
+\label{eq:cgcma_gate}
+\end{equation}
+where the context-shift term $\mathbf{\Delta}_{pc}$ measures the signed deviation of the event-conditioned market context from the price-only summary, and $\tau_{\mathrm{lag}} = t - t^\ast$ denotes the age of the aligned text context at decision time $t$; we scale it by $60$ so the gate receives freshness in hours.
+The gate operates \emph{per-dimension}, enabling selective feature-level fusion: individual dimensions of the text context can be gated in or out independently, providing finer-grained control than a scalar gate.
+
+\paragraph{Gated residual fusion and prediction head.}
+The text context is added to the price representation as a learned residual:
+\begin{equation}
+\mathbf{h}_{f} = \mathbf{h}_{p} + \mathbf{g} \odot \mathbf{h}_c,
+\label{eq:cgcma_fusion}
+\end{equation}
+where $\odot$ denotes element-wise multiplication.
+When $\mathbf{g} \to \mathbf{0}$---which occurs when text is stale, uninformative, or contradicts the price signal---the model degrades gracefully to the price-only summary representation $\mathbf{h}_p$.
+The fused representation and web features are concatenated and passed through a two-layer GELU MLP. In this design, $\mathbf{h}_w$ plays two distinct roles: it conditions the gate as a context-quality signal and is also preserved as a direct predictive feature at the task head:
+\[
+\hat{y} = \mathrm{MLP}(\mathrm{LN}([\mathbf{h}_{f},\; \mathbf{h}_{w}])).
+\]
+Accordingly, the concatenated task-head input has dimension $d + d_w$ rather than $2d$.
+
+\paragraph{Comparison with fixed-gate staleness control.}
+\CGCMA{} differs from the fixed-gate predecessor \SACMA{} in two key respects.
+First, the staleness gate in \SACMA{} is a scalar exponential function of $\tau_{\mathrm{lag}}$ alone ($\exp(-\lambda \tau / 60)$), applying a uniform decay to all text dimensions regardless of content.
+\CGCMA{}'s gate is a learned MLP operating on the full context vector (price embedding, text--price context, their difference, web signals, and lag), enabling content-aware and lag-aware gating simultaneously.
+Second, \CGCMA{} uses a single cross-attention pass (text attends to price), whereas \SACMA{} uses bidirectional attention followed by a 3-token fusion Transformer.
+The single-direction design reduces the parameter count and avoids the overfitting risk of bidirectional attention at low sample counts.
+
+\subsection{Baselines}
+\label{sec:baselines}
+
+We compare \CGCMA{} against protocol baselines and representative published multimodal fusion architectures:
+
+\begin{itemize}
+  \item \textbf{Price-only Transformer} (\textsc{PriceTx-S})~\cite{vaswani2017attention}: Transformer over the price sequence with a CLS-based prediction head; primary unimodal baseline.
+  \item \textbf{Text-only encoder} (\textsc{TextOnly})~\cite{reimers2019sentencebert}: frozen multilingual MiniLM embedding with an MLP head.
+  \item \textbf{Linear TF-IDF Late Fusion} (\textsc{TFLate})~\cite{hoerl1970ridge,salton1988term}: ridge price and TF-IDF text models combined by validation-selected late-fusion weighting; used only in the synthetic subset study.
+  \item \textbf{BiLSTM Fusion} (\textsc{BiLSTM})~\cite{xu2018stocknet}: bidirectional LSTM price encoder fused with text and web projections by concatenation.
+  \item \textbf{Early Fusion} (\textsc{EarlyFusion})~\cite{baltrusaitis2019multimodal}: concatenation of price, text, and web features before a shared MLP head.
+  \item \textbf{MulT} (\textsc{MulT})~\cite{tsai2019multimodal}: bidirectional cross-modal attention with pooled classification.
+  \item \textbf{Tensor Fusion Network} (\textsc{TFN})~\cite{zadeh2017tensor}: tensor outer-product fusion of unimodal subspaces followed by an MLP head.
+\end{itemize}
+
+In addition, the development-path analysis retains \textbf{Dual-Branch Conditional Late Fusion} (\DualBranch{}), an internal ablation predecessor with dense semantic and sparse lexical text branches fused through lag-aware residual gates.
+
+All models use $d{=}32$, dropout 0.3, AdamW (lr $10^{-3}$, wd $10^{-3}$), batch 64, 30 epochs with patience 7, and AUC-based checkpoint selection.
+PriceTx-S, TextOnly, EarlyFusion, and TFLate are protocol baselines instantiated within one shared evaluation framework; BiLSTM, MulT, and TFN are adaptations of named published architectures.
+Primary real-news results (Table~\ref{tab:main}) compare \textsc{PriceTx-S}, \textsc{TextOnly}, \textsc{EarlyFusion}, \textsc{BiLSTM}, \textsc{MulT}, \textsc{TFN}, and \CGCMA{} under one shared protocol.
+\DualBranch{} is retained as an ablation predecessor within the development path rather than the final real-news comparison table.

@@ -1,0 +1,51 @@
+{
+  "name": "mm_pilot_btc_5m_event_rolling",
+  "output_dir": "experiments/results_mm",
+  "split_mode": "rolling",
+  "rolling": {
+    "min_train_windows": 96,
+    "val_windows": 48,
+    "test_windows": 36,
+    "step_windows": 24
+  },
+  "dataset": {
+    "symbol": "BTCUSDT",
+    "interval": "5m",
+    "n_bars": 5000,
+    "end_time": "2025-12-09T00:00:00Z",
+    "cache_dir": "experiments/data_cache",
+    "history_glob": "data/history/*.jsonl",
+    "output_dir": "experiments/mm_cache",
+    "lookback_bars": 192,
+    "horizon_bars": 12,
+    "max_history_lag_minutes": 180,
+    "alignment_mode": "event",
+    "require_web_context": true,
+    "cached_only": false,
+    "force_download": true
+  },
+  "models": [
+    {
+      "name": "price_only_linear",
+      "feature_group": "price",
+      "alpha": 1.0
+    },
+    {
+      "name": "web_only_linear",
+      "feature_group": "web",
+      "alpha": 1.0
+    },
+    {
+      "name": "multimodal_linear",
+      "feature_group": "all",
+      "alpha": 1.0
+    },
+    {
+      "name": "gated_residual_multimodal",
+      "feature_group": "all",
+      "kind": "gated_residual",
+      "alpha": 1.0,
+      "web_alpha": 3.0
+    }
+  ]
+}

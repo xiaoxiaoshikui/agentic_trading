@@ -1,0 +1,50 @@
+\section{Introduction}
+\label{sec:intro}
+
+Multimodal learning has matured on settings where modalities are structurally synchronized: video frames align with audio waveforms, captions are written with the image present, and transcripts are anchored to utterance boundaries~\cite{baltrusaitis2019multimodal,tsai2019multimodal}.
+Real systems are often less forgiving.
+External context can arrive late, sparsely, and with variable usefulness relative to a continuously evolving stream.
+We refer to this challenge as \emph{asynchronous alignment}: the problem of fusing a dense primary signal with sporadic secondary context whose predictive value depends on when it arrives.
+Despite its practical importance, asynchronous alignment remains underexplored because many standard benchmarks hide it through structural synchrony and because temporal validity is usually treated as metadata rather than as a modeling target~\cite{baltrusaitis2019multimodal,dasgupta2018hyte,liu2021temporal}.
+In this paper we focus on one especially important subcase, \emph{event-conditioned asynchronous fusion}, where a dense primary stream must be updated using delayed textual context emitted by external events.
+High-frequency cryptocurrency markets provide a particularly strict stress test for this problem: price time-series evolve under a dense forward-only clock, while web intelligence---news, alerts, and sentiment cascades---arrives intermittently with delays that can materially change its value.
+A news item published 8 minutes after a liquidity shock carries very different signal than one published 3 hours later, after the market has largely adjusted.
+This \emph{modality lag} ($\tau_{\mathrm{lag}}$) is therefore not noise to normalize away, but a first-class property of asynchronous multimodal prediction.
+
+Existing multimodal architectures handle asynchronous signals inadequately~\cite{baltrusaitis2019multimodal,tsai2019multimodal}.
+Methods requiring strict synchronization~\cite{sawhney2020multimodal,qin2019mdrm} discard most available intelligence, as modalities rarely co-occur within narrow windows.
+Window-aggregation approaches~\cite{xu2018stocknet,ding2015deepevent} treat fresh and stale signals as interchangeable, conflating pre- versus post-event information.
+Large language models~\cite{lopez2023fingpt,wu2023bloomberggpt} excel at language understanding but lack architectures for asynchronous alignment.
+The result is a systematic blind spot: modality lag is rarely modeled as an architectural input.
+
+We therefore frame asynchronous alignment as a core financial multimodal learning problem.
+We introduce \dataset{}, an evaluation corpus that pairs high-frequency price sequences with lagged web intelligence across Bitcoin, Ethereum, and Solana.
+\dataset{} records $\tau_{\mathrm{lag}}$ explicitly for lag-conditioned modeling and stratified analysis.
+Its primary real-news split contains 27{,}914 pooled BTC/ETH/SOL samples from CryptoCompare over December 2025--March 2026, with a controlled synthetic split used only for development checks.
+Cryptocurrency markets serve as the target financial domain in this paper and as a strict stress test for asynchronous fusion.
+
+We propose \CGCMA{}, a conditional cross-modal gating architecture for asynchronous prediction.
+Text first attends over the full price sequence to produce grounded context, after which a per-dimension residual gate decides how much of that context to inject based on price--text agreement, web features, and $\tau_{\mathrm{lag}}$ (see Section~\ref{sec:method}).
+The gate can close automatically when external context is stale or contradictory, degrading gracefully toward unimodal prediction.
+We evaluate \CGCMA{} on \dataset{} against price-only, text-only, representative generic multimodal baselines~\cite{xu2018stocknet,tsai2019multimodal,zadeh2017tensor}, and task-specific lag-aware controls under a shared protocol.
+The paper's central claim is therefore not that cryptocurrency forecasting is solved, but that event-conditioned asynchronous fusion can be operationalized as a concrete multimodal setting with measurable freshness structure, controlled evaluation, and a plausible architecture for lag-aware trust.
+
+Our contributions are three-fold:
+\begin{enumerate}
+  \item \textbf{We define and instantiate an event-conditioned asynchronous fusion setting in which lag is part of both sample construction and evaluation.}
+  \dataset{} exposes $\tau_{\mathrm{lag}}$ explicitly across synthetic and real-news corpora, enabling lag-stratified analysis and freshness-aware evaluation under a causal walk-forward protocol.
+  The resulting corpus reveals a non-monotonic utility pattern, with the strongest web signal appearing in the 30--60 minute post-publication range.
+  \item \textbf{We propose a design principle for asynchronous fusion that separates grounding from trust control, and we instantiate it in \CGCMA{}.}
+  Text first attends over the dense price stream to identify event-relevant market states, after which a learned per-dimension gate decides how much of that grounded context should be injected based on agreement, web features, and lag.
+  \item \textbf{We provide cost-aware evidence for grounded conditional fusion on a real-news financial stress test.}
+  Under a 5 bps cost-aware rolling protocol with strong price-only and multimodal baselines, \CGCMA{} achieves the strongest mean downstream Sharpe in a two-seed experiment batch ($+1.047\pm0.793$).
+  Matched seed-fold comparisons show a stable margin over the price-only Transformer, while the margin over TimesNet-lite is positive but not statistically separated at the current sample scale.
+  We therefore position the result as evidence for cost-aware asynchronous fusion rather than as a definitive market-wide trading claim.
+\end{enumerate}
+
+The remainder of this paper is organized as follows.
+Section~\ref{sec:related} situates this paper in the literature.
+Section~\ref{sec:problem} formalizes asynchronous multimodal market prediction.
+Section~\ref{sec:method} describes the \CGCMA{} architecture and its asynchronous input structure.
+Sections~\ref{sec:exp} and~\ref{sec:results} present the evaluation protocol and results.
+Sections~\ref{sec:limitations}--\ref{sec:conclusion} discuss limitations, implications, and conclusions.

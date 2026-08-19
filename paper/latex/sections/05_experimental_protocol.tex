@@ -1,0 +1,76 @@
+\section{Experimental Protocol}
+\label{sec:exp}
+
+\subsection{\dataset{} Summary and Task Support}
+We collect 15-minute OHLCV data from Binance Futures for BTCUSDT, ETHUSDT, and SOLUSDT and align it with real-news web intelligence over December 2025--March 2026 for the primary ICAIF evaluation.
+Each sample uses a lookback window of $L=64$ bars (16 hours), per-window $z$-score normalization, and eleven derived technical features.
+
+\dataset{} contains two complementary corpora.
+The \emph{synthetic corpus} aggregates LLM-synthesized news, fear\,\&\,greed, on-chain, and social signals into structured JSON snapshots with 13 scalar fields and a text blob; January--September 2025 is almost entirely bullish ($>$99\% positive).
+The \emph{real-news corpus} is built from CryptoCompare articles~\cite{cryptocompare2025} over December 2025--March 2026 and forms the paper's primary evaluation set: 27{,}914 pooled samples with much lower mean lag and substantially more diverse sentiment.
+
+For each 15-minute price bar at time $t$, we select the most recent web item $t^* \leq t$ with $\tau_{\mathrm{lag}} = t - t^* \leq 180$ minutes.
+Bars without a valid web context are excluded from the multimodal sample set.
+This defines a conditional forecasting task on news-available bars, and the price-only baseline in the main comparison is evaluated on that same filtered support.
+
+\begin{table}[t]
+\caption{\dataset{} statistics. \emph{Synthetic} denotes the LLM-synthesized corpus from Jan--Dec 2025; \emph{Real news} denotes the CryptoCompare corpus from Dec 2025--Mar 2026 after filtering for valid web context and minimum text quality. We report sample count, mean lag, and positivity rate.}
+\label{tab:dataset}
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{llrrr}
+\toprule
+Corpus & Asset & Samples & Lag (min) & Pos. rate \\
+\midrule
+\multirow{3}{*}{Synthetic} & BTC & 7{,}335 & 62.3 & $>$99\% \\
+ & ETH & 7{,}039 & 64.1 & $>$99\% \\
+ & SOL & 7{,}000 & 63.8 & $>$99\% \\
+\midrule
+\multirow{3}{*}{Real news} & BTC & 19{,}236 & 5.9 & 49.8\% \\
+ & ETH & 6{,}346 & 5.7 & 49.3\% \\
+ & SOL & 2{,}332 & 5.7 & 48.8\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Rolling Walk-Forward Splits}
+We adopt rolling walk-forward evaluation to prevent look-ahead bias.
+The \dataset{} samples are ordered chronologically and partitioned by 15-minute market windows.
+For the ICAIF main comparison, we use $K_{\mathrm{train}}=500$, $K_{\mathrm{val}}=200$, $K_{\mathrm{test}}=200$, and $K_{\mathrm{step}}=1600$, yielding five broad, non-overlapping test blocks on the pooled real-news corpus.
+The resulting fold sizes are 2{,}307--25{,}047 training samples, 572--810 validation samples, and 598--773 test samples.
+For each fold:
+(1) models are trained from scratch on the training split,
+(2) early stopping is performed on the validation split,
+(3) predictions are made on the test split without any re-fitting.
+We repeat the main comparison with two random seeds and report seed-level mean$\pm$standard deviation; pairwise tests use the 10 matched seed-fold units.
+
+\subsection{Cost-Aware Downstream Trading Evaluation}
+Beyond classification metrics, we evaluate the practical utility of model outputs through a threshold-based long--short strategy:
+\begin{itemize}
+  \item \textbf{Long} if $\hat{p}_t \geq \theta_{\mathrm{long}}$;
+  \item \textbf{Short} if $\hat{p}_t \leq \theta_{\mathrm{short}}$;
+  \item \textbf{Flat} otherwise.
+\end{itemize}
+Thresholds are selected on each validation fold by maximizing a Sharpe-minus-drawdown objective over a fixed grid, and are then frozen for the corresponding test fold.
+For each trade at time $t$ with horizon $H$, the net realized return is
+\[
+r_t = \mathrm{position}_t \cdot \frac{c_{t+H} - c_t}{c_t} - |\mathrm{position}_t| \cdot 5\times10^{-4},
+\]
+corresponding to a 5 bps per-trade cost.
+The downstream Sharpe ratio is computed as $\mathrm{SR} = \frac{\mathbb{E}[r]}{\mathrm{std}(r)} \cdot \sqrt{N}$ where $N$ is the number of test windows.
+This metric is used as a decision-oriented proxy for downstream utility rather than as a full live-trading simulation.
+We additionally report a fee-sensitivity analysis at 0, 5, 10, and 20 bps using the exported test predictions.
+
+\subsection{Metrics}
+\begin{itemize}
+  \item \textbf{AUC}: area under the ROC curve for binary price-direction classification.
+  \item \textbf{Brier score}: mean squared probability error, measuring calibration.
+  \item \textbf{Downstream Sharpe}: risk-adjusted return of the threshold strategy applied to model outputs.
+  \item \textbf{Max drawdown}: worst peak-to-trough equity decline over test folds.
+  \item \textbf{Hit rate}: fraction of trades with positive realized return.
+\end{itemize}
+For the main pooled real-news comparison (Table~\ref{tab:main}), we report mean $\pm$ standard deviation across the two seed-level fold averages.
+For pairwise Sharpe deltas, we use the shared fold assignments and report bootstrap intervals over 10 matched seed-fold units.
+For older development sweeps retained as supporting mechanism checks, we clearly separate their run batches from the main comparison.

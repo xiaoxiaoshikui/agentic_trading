@@ -1,0 +1,66 @@
+{
+  "name": "mm_deep_eth_v5_full",
+  "output_dir": "experiments/results_mm",
+  "split_mode": "rolling",
+  "rolling": {
+    "min_train_windows": 500,
+    "val_windows": 200,
+    "test_windows": 200,
+    "step_windows": 100
+  },
+  "dataset": {
+    "symbol": "ETHUSDT",
+    "interval": "15m",
+    "n_bars": 40000,
+    "end_time": "2025-12-31T00:00:00Z",
+    "cache_dir": "experiments/data_cache",
+    "history_glob": ["data/history/*.jsonl", "data/multimodal_history_merged/*.jsonl"],
+    "output_dir": "experiments/results_mm",
+    "lookback_bars": 64,
+    "horizon_bars": 4,
+    "max_history_lag_minutes": 180,
+    "alignment_mode": "event",
+    "require_web_context": true,
+    "min_web_context_strength": 0.2,
+    "cached_only": false,
+    "force_download": false
+  },
+  "text_encoder": {
+    "model_name": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "cache_dir": "experiments/mm_cache/text_embeddings"
+  },
+  "models": [
+    {
+      "name": "price_tx_d32",
+      "kind": "price_sequence_transformer",
+      "d_model": 32,
+      "n_heads": 4,
+      "price_layers": 2,
+      "dropout": 0.3,
+      "lr": 1e-3,
+      "weight_decay": 1e-3,
+      "batch_size": 64,
+      "epochs": 30,
+      "patience": 7,
+      "selection_metric": "auc"
+    },
+    {
+      "name": "sacma_lg_mixup",
+      "kind": "learned_gate_cross_modal",
+      "d_model": 32,
+      "n_heads": 4,
+      "price_layers": 2,
+      "fusion_layers": 1,
+      "dropout": 0.4,
+      "lag_decay": 0.1,
+      "lr": 5e-4,
+      "weight_decay": 1e-3,
+      "batch_size": 64,
+      "epochs": 30,
+      "patience": 7,
+      "selection_metric": "auc",
+      "use_mixup": true,
+      "mixup_alpha": 0.4
+    }
+  ]
+}

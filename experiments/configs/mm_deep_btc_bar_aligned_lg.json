@@ -1,0 +1,66 @@
+{
+  "name": "mm_deep_btc_bar_aligned_lg",
+  "output_dir": "experiments/results_mm",
+  "split_mode": "rolling",
+  "rolling": {
+    "min_train_windows": 40,
+    "val_windows": 16,
+    "test_windows": 12,
+    "step_windows": 8
+  },
+  "dataset": {
+    "symbol": "BTCUSDT",
+    "interval": "15m",
+    "n_bars": 12000,
+    "end_time": "2025-12-31T00:00:00Z",
+    "cache_dir": "experiments/data_cache",
+    "history_glob": ["data/history/*.jsonl", "data/multimodal_history/*.jsonl"],
+    "output_dir": "experiments/mm_cache",
+    "lookback_bars": 64,
+    "horizon_bars": 4,
+    "max_history_lag_minutes": 180,
+    "alignment_mode": "bar",
+    "require_web_context": true,
+    "min_web_context_strength": 0.2,
+    "cached_only": false,
+    "force_download": false
+  },
+  "text_encoder": {
+    "model_name": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "cache_dir": "experiments/mm_cache/text_embeddings"
+  },
+  "models": [
+    {
+      "name": "price_sequence_transformer",
+      "kind": "price_sequence_transformer",
+      "d_model": 32,
+      "n_heads": 4,
+      "price_layers": 2,
+      "dropout": 0.3,
+      "lr": 1e-3,
+      "weight_decay": 1e-3,
+      "batch_size": 64,
+      "epochs": 20,
+      "patience": 5,
+      "selection_metric": "auc"
+    },
+    {
+      "name": "sacma_lg_bar_aligned",
+      "kind": "learned_gate_cross_modal",
+      "d_model": 32,
+      "n_heads": 4,
+      "price_layers": 2,
+      "fusion_layers": 1,
+      "dropout": 0.4,
+      "lag_decay": 0.1,
+      "use_mixup": true,
+      "mixup_alpha": 0.4,
+      "lr": 5e-4,
+      "weight_decay": 1e-3,
+      "batch_size": 64,
+      "epochs": 20,
+      "patience": 5,
+      "selection_metric": "auc"
+    }
+  ]
+}

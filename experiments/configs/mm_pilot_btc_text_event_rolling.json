@@ -1,0 +1,75 @@
+{
+  "name": "mm_pilot_btc_text_event_rolling",
+  "output_dir": "experiments/results_mm",
+  "split_mode": "rolling",
+  "rolling": {
+    "min_train_windows": 40,
+    "val_windows": 16,
+    "test_windows": 12,
+    "step_windows": 12
+  },
+  "dataset": {
+    "symbol": "BTCUSDT",
+    "interval": "15m",
+    "n_bars": 3000,
+    "end_time": "2025-12-09T00:00:00Z",
+    "cache_dir": "experiments/data_cache",
+    "history_glob": "data/history/*.jsonl",
+    "output_dir": "experiments/mm_cache",
+    "lookback_bars": 64,
+    "horizon_bars": 4,
+    "max_history_lag_minutes": 180,
+    "alignment_mode": "event",
+    "require_web_context": true,
+    "cached_only": false,
+    "force_download": true
+  },
+  "models": [
+    {
+      "name": "price_only_linear",
+      "feature_group": "price",
+      "alpha": 1.0
+    },
+    {
+      "name": "web_only_linear",
+      "feature_group": "web",
+      "alpha": 1.0
+    },
+    {
+      "name": "text_only_tfidf",
+      "feature_group": "text_aux",
+      "kind": "text_tfidf_ridge",
+      "text_alpha": 1.0,
+      "text_dim": 512
+    },
+    {
+      "name": "price_text_tfidf_concat",
+      "feature_group": "price",
+      "kind": "text_tfidf_concat",
+      "alpha": 1.0,
+      "text_alpha": 1.0,
+      "text_dim": 512
+    },
+    {
+      "name": "price_text_tfidf_late_fusion",
+      "feature_group": "price",
+      "kind": "tfidf_late_fusion",
+      "alpha": 1.0,
+      "text_alpha": 1.0,
+      "text_dim": 512
+    },
+    {
+      "name": "multimodal_linear",
+      "feature_group": "all",
+      "alpha": 1.0
+    },
+    {
+      "name": "all_text_tfidf_concat",
+      "feature_group": "all",
+      "kind": "text_tfidf_concat",
+      "alpha": 1.0,
+      "text_alpha": 1.0,
+      "text_dim": 512
+    }
+  ]
+}

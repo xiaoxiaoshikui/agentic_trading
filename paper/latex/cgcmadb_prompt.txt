@@ -1,0 +1,67 @@
+Create a publication-quality architecture diagram for CGCMA (Conditionally Gated Cross-Modal Attention) for ACM MM 2026.
+Style: clean, minimalist, top-tier conference level, vector-ready, no drafting notes or informal labels.
+
+1) Overall layout:
+   - Three horizontal sections:
+     * Left: Encoders and inputs
+     * Center: Conditional Fusion ([proposed])
+     * Right: Prediction
+   - Use clear modal colors: blue=price, teal=text, green=web, orange=gate
+   - No “skip” wording; if needed use “residual path” or none
+
+2) Inputs / encoders:
+   - Inputs:
+     * OHLCV window [t-L+1,t]
+     * Aligned text context t* ≤ t
+     * Causal web scalars @ t
+     * Freshness/lag τ = t - t*
+   - Encoder outputs:
+     * Price Encoder → H^p ∈ ℝ^(L×d), h_p ∈ ℝ^d
+     * Text Encoder → h_t ∈ ℝ^d
+     * Web Scalar Encoder → h_w ∈ ℝ^d
+
+3) Grounding block (center-top):
+   - Title: Text-Conditioned Price Attention
+   - Formula: h_c = MHA(Q = h_t, K = H^p, V = H^p) ∈ ℝ^d
+   - Label: event-conditioned market context
+   - Do not repeat ambiguous partial formula differently
+
+4) Trust-aware fusion block (center-bottom):
+   - Title: Conditional Gate
+   - Formula set:
+       Δ_pc = h_c - h_p
+       g = σ(W_g [h_p, h_c, Δ_pc, h_w, τ]) ∈ (0,1)^d
+   - Operation graph with distinct nodes:
+       * h_c → ⊙ (label “h_c”)
+       * g → ⊙ (label “g”)
+       * ⊙ output → +
+       * h_p → + (label “h_p”)
+       * + output → h_f ∈ ℝ^d
+   - Final fused state: h_f = h_p + g ⊙ h_c
+   - Add small text note: “price-only fallback when g→0”
+
+5) Prediction block (right):
+   - Concat block: [h_f; h_w] ∈ ℝ^(2d)
+   - Task head block: ŷ = p(y=1)
+   - Flows:
+       * Fused state → Concat
+       * Web state → Concat
+       * Concat → Task head
+   - Remove any direct bypass arrow from h_w to task head that implies extra bypass
+
+6) Visual details:
+   - Use a legend for color/line semantics
+   - Line styles:
+       * Solid blue: price path
+       * Solid teal: text path
+       * Solid green: web path
+       * Dashed orange: gate control
+       * Solid black/dark: fused flow
+   - Clear arrow labels in the fusion subgraph for h_c, g, h_p
+   - No POC notes like “1.5cm” in final figure text
+   - All module names must be consistent (“Conditional Gate” same everywhere)
+
+7) Academic quality:
+   - Use a concise caption in figure text (post-generation)
+   - Ensure clean vector geometry and professional typography
+   - The diagram must unambiguously match the formula graph h_f = h_p + g ⊙ h_c

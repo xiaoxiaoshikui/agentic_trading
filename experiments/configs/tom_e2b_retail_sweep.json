@@ -1,0 +1,99 @@
+{
+  "name": "tom_e2b_retail_sweep",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT"
+  ],
+  "interval": "15m",
+  "n_bars": 12000,
+  "n_periods": 5,
+  "train_ratio": 0.7,
+  "min_train_bars": 500,
+  "min_test_bars": 200,
+  "seeds": [
+    42,
+    123,
+    456,
+    789,
+    2026
+  ],
+  "output_dir": "experiments/results_tom",
+  "eval": {
+    "initial_capital": 10000.0,
+    "max_positions": 3,
+    "capital_per_position": 0.3,
+    "max_long_exposure": 0.6,
+    "max_short_exposure": 0.6,
+    "max_daily_loss": 0.05,
+    "max_single_asset_loss": 0.08,
+    "min_confidence": 0.3,
+    "atr_stop_multiplier": 2.0,
+    "atr_profit_multiplier": 4.0,
+    "warmup_bars": 200
+  },
+  "agents": {
+    "ToM-RetailBase": {
+      "type": "tom",
+      "depth": 1,
+      "use_technical": true,
+      "opponents": [
+        "retail",
+        "momentum"
+      ],
+      "opponent_params": {
+        "retail": {
+          "market_share": 0.25
+        },
+        "momentum": {
+          "market_share": 0.35
+        }
+      }
+    },
+    "ToM-RetailLow": {
+      "type": "tom",
+      "depth": 1,
+      "use_technical": true,
+      "opponents": [
+        "retail",
+        "momentum"
+      ],
+      "opponent_params": {
+        "retail": {
+          "market_share": 0.1
+        },
+        "momentum": {
+          "market_share": 0.5
+        }
+      }
+    },
+    "ToM-RetailHigh": {
+      "type": "tom",
+      "depth": 1,
+      "use_technical": true,
+      "opponents": [
+        "retail",
+        "momentum"
+      ],
+      "opponent_params": {
+        "retail": {
+          "market_share": 0.4
+        },
+        "momentum": {
+          "market_share": 0.2
+        }
+      }
+    }
+  },
+  "experiments": {
+    "E2b": {
+      "name": "retail_weight_sweep",
+      "agents": [
+        "ToM-RetailBase",
+        "ToM-RetailLow",
+        "ToM-RetailHigh"
+      ]
+    }
+  },
+  "end_time": "2026-02-07T00:00:00Z"
+}

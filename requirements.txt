@@ -1,0 +1,19 @@
+# Core dependencies
+python-binance>=1.0.19
+python-dotenv>=1.0.1
+pandas>=2.0.0
+numpy>=1.25.0
+openai>=1.0.0
+
+# Technical analysis (required)
+ta>=0.11.0
+
+# HTTP requests (required for Ollama integration)
+requests>=2.31.0
+
+# Statistics (required by experiments.metrics)
+scipy>=1.10.0
+
+# Optional: Advanced technical analysis
+# scikit-learn>=1.3.0
+# vectorbt>=0.28.0

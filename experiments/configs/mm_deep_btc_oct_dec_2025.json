@@ -1,0 +1,91 @@
+{
+  "name": "mm_deep_btc_oct_dec_2025",
+  "output_dir": "experiments/results_mm",
+  "split_mode": "rolling",
+  "rolling": {
+    "min_train_windows": 40,
+    "val_windows": 16,
+    "test_windows": 12,
+    "step_windows": 8
+  },
+  "dataset": {
+    "symbol": "BTCUSDT",
+    "interval": "15m",
+    "n_bars": 9000,
+    "end_time": "2025-12-31T00:00:00Z",
+    "cache_dir": "experiments/data_cache",
+    "history_glob": [
+      "data/history/*.jsonl",
+      "data/multimodal_history_merged/*.jsonl"
+    ],
+    "output_dir": "experiments/results_mm",
+    "lookback_bars": 64,
+    "horizon_bars": 4,
+    "alignment_mode": "event",
+    "require_web_context": true,
+    "min_web_context_strength": 0.2,
+    "min_text_char_len": 120,
+    "min_text_source_count": 4,
+    "max_text_error_count": 0,
+    "max_text_template_ratio": 0.35,
+    "min_text_quality_score": 0.45,
+    "cached_only": false,
+    "force_download": false
+  },
+  "text_encoder": {
+    "model_name": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "cache_dir": "experiments/mm_cache/text_embeddings"
+  },
+  "models": [
+    {
+      "name": "price_tx_d32",
+      "kind": "price_sequence_transformer",
+      "d_model": 32,
+      "n_heads": 4,
+      "price_layers": 2,
+      "dropout": 0.3,
+      "lr": 1e-3,
+      "weight_decay": 1e-3,
+      "batch_size": 64,
+      "epochs": 30,
+      "patience": 7,
+      "selection_metric": "auc"
+    },
+    {
+      "name": "sacma_lg_mixup",
+      "kind": "learned_gate_cross_modal",
+      "d_model": 32,
+      "n_heads": 4,
+      "price_layers": 2,
+      "fusion_layers": 1,
+      "dropout": 0.4,
+      "lag_decay": 0.1,
+      "lr": 5e-4,
+      "weight_decay": 1e-3,
+      "batch_size": 64,
+      "epochs": 30,
+      "patience": 7,
+      "selection_metric": "auc",
+      "use_mixup": true,
+      "mixup_alpha": 0.4
+    },
+    {
+      "name": "dual_branch_cond_late",
+      "kind": "dual_branch_conditional_late_fusion",
+      "d_model": 32,
+      "n_heads": 4,
+      "price_layers": 2,
+      "hidden_dim": 128,
+      "dropout": 0.3,
+      "lr": 1e-3,
+      "weight_decay": 1e-3,
+      "batch_size": 64,
+      "epochs": 30,
+      "patience": 7,
+      "selection_metric": "auc",
+      "use_hybrid_text": true,
+      "hybrid_tfidf_features": 128,
+      "text_base_dim": 384
+    }
+  ]
+}
