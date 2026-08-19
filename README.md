@@ -23,6 +23,14 @@ The main proposed architecture is **CGCMA**: Conditionally-Gated Cross-Modal Att
 - **Grounding**: text attends over the price sequence to retrieve event-relevant market states.
 - **Trust control**: a learned per-dimension gate decides how much grounded context to inject based on price-text agreement, web features, and modality lag.
 
+<p align="center">
+  <img src="docs/figures/cgcma_architecture.png" alt="CGCMA architecture" width="900">
+</p>
+
+<p align="center">
+  <em>CGCMA grounds event text in the price sequence, then uses a freshness- and agreement-aware gate to control residual multimodal fusion.</em>
+</p>
+
 ## Key Results
 
 The headline results below are from the committed frozen tables under `paper/`. The primary real-news protocol uses BTC+ETH+SOL pooled data, 27,914 event-conditioned samples, 15-minute bars, a 4-bar forecast horizon, rolling walk-forward splits, and 5 bps per-trade transaction cost.
