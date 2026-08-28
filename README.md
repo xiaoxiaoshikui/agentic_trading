@@ -169,6 +169,10 @@ python3 -m unittest \
 
 For artifact details and current reproducibility gaps, see `paper/reproducibility.md`.
 
+## Deployment
+
+See `DEPLOYMENT.md` for the Vast.ai GPU workflow, SSH startup repair script, and Hugging Face artifact upload path.
+
 ## Method Summary
 
 CGCMA operates on:
